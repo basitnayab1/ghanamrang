@@ -135,6 +135,54 @@ export default function Silk({ color, className = "" }: { color: string; classNa
     mesh.position.y = -0.4;
     scene.add(mesh);
 
+    // floating gold motes between the camera and the cloth: real depth, so they
+    // slide past each other as the camera moves with the mouse and the scroll
+    const count = small ? 140 : 360;
+    const pos = new Float32Array(count * 3);
+    const seed = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 18;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 10;
+      pos[i * 3 + 2] = -1 + Math.random() * 6.5;
+      seed[i] = Math.random();
+    }
+    const dustGeo = new THREE.BufferGeometry();
+    dustGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    dustGeo.setAttribute("aSeed", new THREE.BufferAttribute(seed, 1));
+    const dustMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: { uTime: uniforms.uTime, uRatio: { value: renderer.getPixelRatio() } },
+      vertexShader: /* glsl */ `
+        uniform float uTime;
+        uniform float uRatio;
+        attribute float aSeed;
+        varying float vTwinkle;
+        void main() {
+          vec3 p = position;
+          // drift slowly upward, wrapping round, with a little side-to-side sway
+          p.y = mod(p.y + 5.0 + uTime * (0.08 + aSeed * 0.12), 10.0) - 5.0;
+          p.x += sin(uTime * 0.3 + aSeed * 40.0) * 0.25;
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          gl_Position = projectionMatrix * mv;
+          gl_PointSize = (3.0 + aSeed * 8.0) * uRatio * (7.0 / -mv.z);
+          vTwinkle = 0.35 + 0.65 * (0.5 + 0.5 * sin(uTime * (0.8 + aSeed * 2.0) + aSeed * 30.0));
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        varying float vTwinkle;
+        void main() {
+          float d = length(gl_PointCoord - 0.5);
+          float a = smoothstep(0.5, 0.0, d);   // soft round glow
+          float core = smoothstep(0.18, 0.0, d); // bright centre so each mote reads as a point of light
+          gl_FragColor = vec4(vec3(1.0, 0.86, 0.62) * (a * 0.7 + core) * vTwinkle, a * vTwinkle);
+        }
+      `,
+    });
+    const dust = new THREE.Points(dustGeo, dustMat);
+    scene.add(dust);
+
     const resize = () => {
       const { width, height } = host.getBoundingClientRect();
       if (!width || !height) return;
@@ -227,6 +275,8 @@ export default function Silk({ color, className = "" }: { color: string; classNa
       document.removeEventListener("visibilitychange", onVisibility);
       geometry.dispose();
       material.dispose();
+      dustGeo.dispose();
+      dustMat.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       renderer.domElement.remove();

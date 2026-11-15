@@ -2,7 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useAnimationFrame,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
 import dynamic from "next/dynamic";
 import { findColor, formatPrice, getProduct, heroFigures, productHref, type HeroFigure } from "@/data/catalog";
 
@@ -23,6 +33,23 @@ const SLOTS = [
   { x: 0.04, scale: 0.64, z: 10, blur: 3, bright: 0.38, y: -26 },
   { x: -0.2, scale: 0.8, z: 20, blur: 1.2, bright: 0.62, y: -10 },
 ];
+
+/** How far each orbit position drifts with the pointer: near things move more. */
+const DEPTH = [1, 0.5, 0.2, 0.5];
+
+/** Shifts its child with the pointer, by `depth` (0 = still, 1 = nearest). */
+function Parallax({ mx, my, depth, children }: { mx: MotionValue<number>; my: MotionValue<number>; depth: number; children: React.ReactNode }) {
+  // depth eases too, so a figure moving to the front picks up speed smoothly
+  const d = useSpring(depth, { stiffness: 60, damping: 20 });
+  useEffect(() => d.set(depth), [d, depth]);
+  const x = useTransform([mx, d], ([a, b]: number[]) => a * b * 38);
+  const y = useTransform([my, d], ([a, b]: number[]) => a * b * 16);
+  return (
+    <motion.div style={{ x, y }} className="flex h-full items-end">
+      {children}
+    </motion.div>
+  );
+}
 
 export default function HomeHero() {
   const n = heroFigures.length;
@@ -56,6 +83,30 @@ export default function HomeHero() {
   const [paused, setPaused] = useState(false);
   const reduce = useReducedMotion();
   const wide = stageW >= 700;
+
+  // 3D depth: -1..1 pointer position. Figures in front move further than those
+  // behind (parallax) and the whole cluster turns a little toward the pointer.
+  // With no mouse (phones), the cluster sways gently on its own.
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const smx = useSpring(mx, { stiffness: 60, damping: 18, mass: 0.8 });
+  const smy = useSpring(my, { stiffness: 60, damping: 18, mass: 0.8 });
+  const stageTurn = useTransform(smx, [-1, 1], [-7, 7]);
+  const stageTip = useTransform(smy, [-1, 1], [5, -5]);
+  const wordShift = useTransform(smx, (v) => v * -26);
+  const pointerAt = useRef(0); // time of the last real mouse move
+  useAnimationFrame((t) => {
+    if (reduce || performance.now() - pointerAt.current < 2500) return;
+    mx.set(Math.sin(t / 2600) * 0.45);
+    my.set(Math.cos(t / 3400) * 0.25);
+  });
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (e.pointerType !== "mouse" || reduce) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    mx.set(((e.clientX - r.left) / r.width) * 2 - 1);
+    my.set(((e.clientY - r.top) / r.height) * 2 - 1);
+    pointerAt.current = performance.now();
+  };
 
   useEffect(() => {
     const el = stageRef.current;
@@ -108,7 +159,7 @@ export default function HomeHero() {
   };
 
   return (
-    <section ref={sectionRef} className="relative overflow-hidden">
+    <section ref={sectionRef} onPointerMove={onPointerMove} className="relative overflow-hidden">
       <h1 className="sr-only">Ghanam Rang — abaya and khimar sets in deep colour</h1>
       {/* real-3D silk behind everything; it takes the colour of the piece in front */}
       {silkReady && <Silk color={silkColor} className="pointer-events-none absolute inset-0 animate-[silkIn_1.2s_ease-out_both]" />}
@@ -122,10 +173,11 @@ export default function HomeHero() {
         style={reduce ? undefined : { scale: outScale, y: outY, rotateX: outTilt, opacity: outOpacity, filter: outBlur, transformPerspective: 1200, transformOrigin: "50% 100%" }}
         className="relative mx-auto flex min-h-[calc(100svh-64px)] max-w-[1400px] flex-col px-6 md:px-10"
       >
-        <div
+        <motion.div
           ref={stageRef}
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
+          style={reduce ? undefined : { rotateY: stageTurn, rotateX: stageTip, transformPerspective: 1600 }}
           className="relative min-h-[460px] flex-1"
         >
           {/* giant outlined word behind the focused piece */}
@@ -139,7 +191,7 @@ export default function HomeHero() {
                 exit={{ opacity: 0, x: -40 }}
                 transition={{ duration: 0.8, ease }}
                 className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 select-none text-center font-serif text-[30vw] font-light uppercase leading-none text-transparent md:text-[19vw]"
-                style={{ WebkitTextStroke: "1px rgba(241,236,228,0.13)" }}
+                style={{ WebkitTextStroke: "1px rgba(241,236,228,0.13)", translateX: wordShift }}
               >
                 {focused.word}
               </motion.p>
@@ -150,7 +202,13 @@ export default function HomeHero() {
           <div className="pointer-events-none absolute bottom-[3%] left-1/2 h-8 w-[46%] -translate-x-1/2 rounded-[50%] bg-black/70 blur-xl" />
 
           {heroFigures.map((fig, i) => (
-            <div key={fig.id} className="pointer-events-none absolute inset-x-0 bottom-[4%] top-[2%] flex items-end justify-center">
+            <div
+              key={fig.id}
+              // stacking lives here: the parallax layer inside is its own stacking context
+              style={{ zIndex: focused ? (fig.id === focused.id ? 50 : 0) : SLOTS[(i - front + n) % n].z }}
+              className="pointer-events-none absolute inset-x-0 bottom-[4%] top-[2%] flex items-end justify-center"
+            >
+              <Parallax mx={smx} my={smy} depth={focused ? (fig.id === focused.id ? 0.7 : 0) : DEPTH[(i - front + n) % n]}>
               <motion.button
                 onClick={() => (focused ? setFocus(null) : setFocus(fig.id))}
                 aria-label={focused ? "Back to all pieces" : `Open ${getProduct(fig.productId)?.name} in ${fig.colorName}`}
@@ -168,11 +226,12 @@ export default function HomeHero() {
                   <img src={fig.src} alt="" fetchPriority="high" draggable={false} className="h-full w-auto select-none drop-shadow-[0_30px_40px_rgba(0,0,0,0.6)]" />
                 </motion.span>
               </motion.button>
+              </Parallax>
             </div>
           ))}
 
           <AnimatePresence>{focused && <FocusPanel key="panel" figure={focused} wide={wide} onPick={setFocus} onClose={() => setFocus(null)} />}</AnimatePresence>
-        </div>
+        </motion.div>
 
         {!focused && (
           <p className="relative z-[60] pt-3 text-center font-serif text-[24px] font-light md:hidden">
