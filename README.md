@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ghanam Rang
 
-## Getting Started
+Storefront for **Ghanam Rang** — abaya and khimar sets in deep colour. Built with Next.js 15, React 19, Tailwind CSS 4, Framer Motion and three.js.
 
-First, run the development server:
+## What's in it
+
+- **Home** — floating cluster of the models over a real-3D (WebGL) silk that takes the colour of the piece in front; click a figure for a focus view with colour swatches. Scroll effects: the hero tips back into the distance, a statement lights up word by word, a scroll-driven marquee, and a progress line.
+- **The Rail** — the collection on hangers; scrolling slides the rack, pieces swing, tap one for a quick view.
+- **Try the Style** (`/try-the-style`) — swipeable 3D photo carousel with the full set and sizes.
+- **Shop** (`/shop`) and **product pages** (`/product/[id]`) — colourways, size chart, 3D card tilt.
+- **Bag + checkout** (`/checkout`) — cash on delivery or bank / JazzCash / Easypaisa transfer; prices are always re-calculated on the server from the catalog.
+- **Order confirmation** (`/order/[token]`) — with a one-tap "confirm on WhatsApp" message.
+- **Admin** (`/admin`) — password-protected list of orders with status updates.
+
+## Run locally
 
 ```bash
+npm install
+cp .env.example .env.local   # then set ADMIN_PASSWORD and ADMIN_SECRET
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. The admin page is at http://localhost:3000/admin.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Things to fill in before going live
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| What | Where |
+| --- | --- |
+| Real prices, names, fabrics | `src/data/catalog.ts` (prices are placeholders) |
+| Size chart ↔ product pairing | `src/data/catalog.ts` |
+| Delivery fee, free-delivery threshold | `src/lib/checkout.ts` |
+| Bank / JazzCash / Easypaisa account details | `src/lib/checkout.ts` (`TRANSFER_ACCOUNTS`) |
+| Admin password and cookie secret | `.env.local` (never commit it) |
 
-## Learn More
+## Hosting note
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Orders are saved to `.data/orders.json` (git-ignored — it holds customer details). That works on a single server / VPS. On serverless hosting such as Vercel the file system doesn't persist, so swap the functions in `src/lib/orders.ts` for a database first.

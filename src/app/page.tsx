@@ -1,103 +1,73 @@
-import Image from "next/image";
+import Link from "next/link";
+import HomeHero from "@/components/HomeHero";
+import ProductCard from "@/components/ProductCard";
+import TheRail from "@/components/TheRail";
+import Reveal3D from "@/components/Reveal3D";
+import ScrollStatement from "@/components/ScrollStatement";
+import ScrollMarquee from "@/components/ScrollMarquee";
+import { colorways, products } from "@/data/catalog";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const abaya = products.find((p) => p.category === "abaya-sets")!;
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  return (
+    <main className="bg-ink">
+      <HomeHero />
+
+      {/* words light up one by one as you scroll */}
+      <ScrollStatement
+        eyebrow="Ghanam Rang"
+        text="Cut loose, dyed *deep,* and made to move — sets in mocha, navy and olive that carry you from the street to the pitch with *quiet* grace."
+      />
+
+      {/* collection */}
+      <section className="mx-auto max-w-[1400px] px-6 py-16 md:px-10">
+        <Reveal3D className="mb-8 flex items-end justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.22em] text-accent">The collection</p>
+            <h2 className="mt-2 font-serif text-[36px] font-light md:text-[44px]">Every set, every shade</h2>
+          </div>
+          <Link href="/shop" className="text-[13px] text-muted hover:text-paper">Shop all →</Link>
+        </Reveal3D>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3">
+          {colorways.map(({ product, color }, i) => (
+            <ProductCard key={`${product.id}-${color.name}`} product={product} color={color} index={i} />
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </section>
+
+      {/* big type that drifts sideways and speeds up with the scroll */}
+      <ScrollMarquee items={["Abaya", "Khimar", "Mocha", "Navy", "Olive", "Ghanam Rang"]} />
+
+      {/* the collection hung on a rack; scrolling slides it */}
+      <TheRail />
+
+      {/* size guide teaser */}
+      <section className="mx-auto grid max-w-[1400px] gap-10 px-6 py-20 md:grid-cols-2 md:px-10">
+        <Reveal3D>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-accent">Find your fit</p>
+          <h2 className="mt-2 font-serif text-[36px] font-light md:text-[44px]">Three sizes, cut loose.</h2>
+          <p className="mt-4 max-w-sm text-[14px] leading-relaxed text-paper/70">
+            Every set comes in Small, Medium and Large, with a relaxed fit. Not sure? Message us on WhatsApp and we&apos;ll help you choose.
+          </p>
+          <Link href={`/product/${abaya.id}`} className="mt-6 inline-block text-[13px] underline underline-offset-4 hover:text-accent">
+            See the size chart
+          </Link>
+        </Reveal3D>
+        <Reveal3D delay={0.15} className="self-end">
+        <table className="w-full text-left text-[14px] tabular-nums">
+          <thead>
+            <tr className="text-muted">{abaya.sizeChart.head.map((h) => <th key={h} className="pb-3 font-normal">{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {abaya.sizeChart.rows.map((r) => (
+              <tr key={r[0]} className="border-t border-line">{r.map((c, i) => <td key={i} className="py-3">{c}</td>)}</tr>
+            ))}
+          </tbody>
+          <caption className="caption-bottom pt-3 text-left text-[11px] text-muted">{abaya.name}, in {abaya.sizeChart.unit}</caption>
+        </table>
+        </Reveal3D>
+      </section>
+    </main>
   );
 }
