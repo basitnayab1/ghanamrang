@@ -5,6 +5,7 @@ import TheRail from "@/components/TheRail";
 import Reveal3D from "@/components/Reveal3D";
 import ScrollStatement from "@/components/ScrollStatement";
 import ScrollMarquee from "@/components/ScrollMarquee";
+import ShadesSection from "@/components/ShadesSection";
 import { preload } from "react-dom";
 import { colorways, heroFigures, products } from "@/data/catalog";
 
@@ -39,6 +40,16 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* three lengths of cloth in 3D, one per colour, moving in a breeze */}
+      <ShadesSection
+        shades={colorways.map(({ product, color }) => ({
+          name: color.name,
+          hex: color.swatch,
+          note: product.name,
+          href: `/shop?color=${encodeURIComponent(color.name)}`,
+        }))}
+      />
 
       {/* big type that drifts sideways and speeds up with the scroll */}
       <ScrollMarquee items={["Abaya", "Khimar", "Mocha", "Navy", "Olive", "Ghanam Rang"]} />
