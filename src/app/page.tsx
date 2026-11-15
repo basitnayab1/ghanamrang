@@ -5,10 +5,14 @@ import TheRail from "@/components/TheRail";
 import Reveal3D from "@/components/Reveal3D";
 import ScrollStatement from "@/components/ScrollStatement";
 import ScrollMarquee from "@/components/ScrollMarquee";
-import { colorways, products } from "@/data/catalog";
+import { preload } from "react-dom";
+import { colorways, heroFigures, products } from "@/data/catalog";
 
 export default function Home() {
   const abaya = products.find((p) => p.category === "abaya-sets")!;
+
+  // the hero figures are the first thing people see: ask for them in the <head>, before any script
+  heroFigures.forEach((f) => preload(f.src, { as: "image", fetchPriority: "high" }));
 
   return (
     <main className="bg-ink">

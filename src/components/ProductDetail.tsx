@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { categories, findColor, formatPrice, looks, type Product } from "@/data/catalog";
+import { categories, findColor, formatPrice, looks, thumbOf, type Product } from "@/data/catalog";
 import { useBag } from "@/store/bag";
 
 export default function ProductDetail({ product }: { product: Product }) {
@@ -98,7 +98,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                 className={`h-24 w-[72px] shrink-0 overflow-hidden rounded bg-card transition ${i === imageIndex ? "ring-1 ring-paper" : "opacity-50 hover:opacity-100"}`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt="" className="h-full w-full object-cover" />
+                <img src={thumbOf(src)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
               </button>
             ))}
           </div>

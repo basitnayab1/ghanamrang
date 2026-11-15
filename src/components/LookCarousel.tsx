@@ -171,7 +171,7 @@ function Card({
       className="absolute left-1/2 top-1/2 -translate-y-1/2 overflow-hidden rounded-2xl bg-card shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)] will-change-transform"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={look.image} alt={look.title} draggable={false} className="h-full w-full object-cover" />
+      <img src={look.image} alt={look.title} decoding="async" draggable={false} className="h-full w-full object-cover" />
     </motion.div>
   );
 }
