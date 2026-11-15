@@ -32,6 +32,15 @@ Open http://localhost:3000. The admin page is at http://localhost:3000/admin.
 | Bank / JazzCash / Easypaisa account details | `src/lib/checkout.ts` (`TRANSFER_ACCOUNTS`) |
 | Admin password and cookie secret | `.env.local` (never commit it) |
 
-## Hosting note
+## Deploying on Vercel
 
-Orders are saved to `.data/orders.json` (git-ignored — it holds customer details). That works on a single server / VPS. On serverless hosting such as Vercel the file system doesn't persist, so swap the functions in `src/lib/orders.ts` for a database first.
+1. Merge into `main` (Vercel deploys `main` to production).
+2. **Storage → Create → Upstash for Redis** (free plan), and connect it to this project. Vercel adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` automatically.
+3. **Settings → Environment Variables:** add `ADMIN_PASSWORD` and `ADMIN_SECRET` (a long random string).
+4. Redeploy.
+
+Where orders are stored (`src/lib/orders.ts`):
+
+- **Upstash Redis** whenever `KV_REST_API_URL` + `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`) are set — use this on Vercel.
+- Otherwise **`.data/orders.json`** (git-ignored — it holds customer details), for local development or a single VPS.
+- On Vercel without Redis, placing an order fails with a clear message rather than losing it, and `/admin` explains what's missing.
