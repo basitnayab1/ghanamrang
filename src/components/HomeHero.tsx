@@ -35,8 +35,22 @@ export default function HomeHero() {
   const outY = useTransform(scrollYProgress, [0, 1], [0, 160]);
   const outTilt = useTransform(scrollYProgress, [0, 1], [0, 22]);
   const outOpacity = useTransform(scrollYProgress, [0, 0.85], [1, 0]);
-  const outBlur = useTransform(scrollYProgress, [0, 1], ["blur(0px)", "blur(8px)"]);
+  // "none" at rest: even blur(0px) makes the browser filter the whole hero every frame
+  const outBlur = useTransform(scrollYProgress, (v) => (v < 0.02 ? "none" : `blur(${(v * 8).toFixed(1)}px)`));
   const [stageW, setStageW] = useState(900);
+
+  // three.js (the silk) waits until the page has painted and the browser is idle,
+  // so it never competes with the photos for bandwidth or the main thread
+  const [silkReady, setSilkReady] = useState(false);
+  useEffect(() => {
+    const start = () => setSilkReady(true);
+    if ("requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(start, { timeout: 1500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = setTimeout(start, 600);
+    return () => clearTimeout(t);
+  }, []);
   const [front, setFront] = useState(0);
   const [focus, setFocus] = useState<string | null>(null);
   const [paused, setPaused] = useState(false);
@@ -97,11 +111,11 @@ export default function HomeHero() {
     <section ref={sectionRef} className="relative overflow-hidden">
       <h1 className="sr-only">Ghanam Rang — abaya and khimar sets in deep colour</h1>
       {/* real-3D silk behind everything; it takes the colour of the piece in front */}
-      <Silk color={silkColor} className="pointer-events-none absolute inset-0" />
+      {silkReady && <Silk color={silkColor} className="pointer-events-none absolute inset-0 animate-[silkIn_1.2s_ease-out_both]" />}
       {/* warm glow behind the cluster */}
       <div className="pointer-events-none absolute left-1/2 top-[38%] h-[70vh] w-[70vh] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(201,176,138,0.12),transparent_65%)]" />
       {/* darken behind the figures so they stay the focus */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_45%_60%_at_50%_55%,rgba(0,0,0,0.55),transparent_75%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_38%_55%_at_50%_58%,rgba(0,0,0,0.32),transparent_72%)]" />
 
       {/* scrolling away tips the whole cluster back into the distance */}
       <motion.div
@@ -151,7 +165,7 @@ export default function HomeHero() {
                   transition={{ duration: 5 + i * 0.7, repeat: Infinity, ease: "easeInOut" }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={fig.src} alt="" draggable={false} className="h-full w-auto select-none drop-shadow-[0_30px_40px_rgba(0,0,0,0.6)]" />
+                  <img src={fig.src} alt="" fetchPriority="high" draggable={false} className="h-full w-auto select-none drop-shadow-[0_30px_40px_rgba(0,0,0,0.6)]" />
                 </motion.span>
               </motion.button>
             </div>

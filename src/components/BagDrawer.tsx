@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { formatPrice, productHref } from "@/data/catalog";
+import { formatPrice, productHref, thumbOf } from "@/data/catalog";
 import { bagCount, resolveLines, useBag } from "@/store/bag";
 
 /** Loads the saved bag from localStorage once we're in the browser. */
@@ -66,7 +66,7 @@ export default function BagDrawer() {
                   <li key={l.key} className="flex gap-3 py-4">
                     <Link href={productHref(l.product, l.color)} onClick={() => setOpen(false)} className="h-24 w-[72px] shrink-0 overflow-hidden rounded bg-card-2">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={l.color.images[0]} alt="" className="h-full w-full object-cover" />
+                      <img src={thumbOf(l.color.images[0])} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                     </Link>
                     <div className="flex min-w-0 flex-1 flex-col">
                       <p className="truncate text-[13px]">{l.product.name}</p>

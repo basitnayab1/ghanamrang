@@ -127,7 +127,7 @@ function Hanging({
         className="relative w-full transition group-focus-visible:rounded-lg group-focus-visible:ring-2 group-focus-visible:ring-accent"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={piece.src} alt="" draggable={false} className="h-[min(68svh,620px)] w-full object-contain object-top drop-shadow-[0_24px_20px_rgba(0,0,0,0.45)]" />
+        <img src={piece.src} alt="" loading="lazy" decoding="async" draggable={false} className="h-[min(68svh,620px)] w-full object-contain object-top drop-shadow-[0_24px_20px_rgba(0,0,0,0.45)]" />
       </motion.div>
       {/* swing tag */}
       <span className="pointer-events-none absolute left-[62%] top-[96px] origin-top -rotate-6 rounded-sm bg-paper px-2 py-1 text-[10px] font-medium tabular-nums text-ink opacity-0 shadow transition duration-300 group-hover:rotate-3 group-hover:opacity-100">

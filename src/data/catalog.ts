@@ -46,7 +46,7 @@ export const products: Product[] = [
     name: "Open Abaya Set",
     category: "abaya-sets",
     price: 7500, // placeholder
-    colors: [{ name: "Mocha", swatch: "#69423a", railImage: "/products/hangers/mocha.png", images: ["/products/hangers/mocha.png"] }],
+    colors: [{ name: "Mocha", swatch: "#69423a", railImage: "/products/hangers/mocha.webp", images: ["/products/hangers/mocha.webp"] }],
     sizes: SIZES,
     sizeChart: {
       unit: "inches",
@@ -72,10 +72,10 @@ export const products: Product[] = [
       {
         name: "Navy",
         swatch: "#48566b",
-        railImage: "/products/hangers/navy.png",
-        images: ["/products/hangers/navy.png"],
+        railImage: "/products/hangers/navy.webp",
+        images: ["/products/hangers/navy.webp"],
       },
-      { name: "Olive", swatch: "#2f3a2f", railImage: "/products/hangers/olive.png", images: ["/products/hangers/olive.png"] },
+      { name: "Olive", swatch: "#2f3a2f", railImage: "/products/hangers/olive.webp", images: ["/products/hangers/olive.webp"] },
     ],
     sizes: SIZES,
     sizeChart: {
@@ -99,9 +99,9 @@ export const products: Product[] = [
 export type Look = { id: string; title: string; productId: string; colorName: string; image: string };
 
 export const looks: Look[] = [
-  { id: "olive", title: "Olive Khimar", productId: "khimar-set", colorName: "Olive", image: "/products/hangers/olive.png" },
-  { id: "navy-walk", title: "Navy Khimar", productId: "khimar-set", colorName: "Navy", image: "/products/hangers/navy.png" },
-  { id: "mocha", title: "Mocha Abaya", productId: "open-abaya-set", colorName: "Mocha", image: "/products/hangers/mocha.png" },
+  { id: "olive", title: "Olive Khimar", productId: "khimar-set", colorName: "Olive", image: "/products/hangers/olive.webp" },
+  { id: "navy-walk", title: "Navy Khimar", productId: "khimar-set", colorName: "Navy", image: "/products/hangers/navy.webp" },
+  { id: "mocha", title: "Mocha Abaya", productId: "open-abaya-set", colorName: "Mocha", image: "/products/hangers/mocha.webp" },
 ];
 
 /**
@@ -130,3 +130,6 @@ export const productHref = (p: Product, color?: ColorOption) =>
   `/product/${p.id}${color ? `?color=${encodeURIComponent(color.name)}` : ""}`;
 
 export const formatPrice = (n: number) => `Rs ${n.toLocaleString("en-PK")}`;
+
+/** Small (480px) version of a hanger photo, for thumbnails in the bag, checkout and galleries. */
+export const thumbOf = (src: string) => src.replace(/\/hangers\/([\w-]+)\.webp$/, "/hangers/$1-480.webp");

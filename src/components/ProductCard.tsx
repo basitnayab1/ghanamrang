@@ -23,10 +23,10 @@ export default function ProductCard({ product, color, index = 0 }: { product: Pr
       <Tilt3D className="rounded-lg">
       <Link href={href} className="relative block aspect-[3/4] overflow-hidden rounded-lg bg-card">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={main} alt={`${product.name} in ${color.name}`} className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]" />
+        <img src={main} loading="lazy" decoding="async" alt={`${product.name} in ${color.name}`} className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]" />
         {hover && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={hover} alt="" className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-700 group-hover:opacity-100" />
+          <img src={hover} loading="lazy" decoding="async" alt="" className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-700 group-hover:opacity-100" />
         )}
         {product.isNew && (
           <span className="absolute left-3 top-3 rounded-full bg-ink/70 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] backdrop-blur">New</span>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatPrice } from "@/data/catalog";
+import { formatPrice, thumbOf } from "@/data/catalog";
 import { CITIES, DELIVERY_FEE, FREE_DELIVERY_OVER, PAYMENT_METHODS, deliveryFor, type FieldErrors, type PaymentMethod } from "@/lib/checkout";
 import { resolveLines, useBag } from "@/store/bag";
 
@@ -179,7 +179,7 @@ export default function CheckoutView() {
             <li key={l.key} className="flex gap-3 py-3">
               <div className="relative h-20 w-[60px] shrink-0 overflow-hidden rounded bg-card-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={l.color.images[0]} alt="" className="h-full w-full object-cover" />
+                <img src={thumbOf(l.color.images[0])} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 <span className="absolute right-1 top-1 grid h-5 min-w-5 place-items-center rounded-full bg-paper px-1 text-[10px] font-medium text-ink">{l.qty}</span>
               </div>
               <div className="min-w-0 flex-1">

@@ -31,3 +31,9 @@ body {
   background: #c9b08a;
   color: #000;
 }
+
+/* the 3D silk fades in once it has loaded */
+@keyframes silkIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

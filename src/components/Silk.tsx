@@ -63,18 +63,23 @@ const fragment = /* glsl */ `
     vec3 v = normalize(-vViewPos);
     vec3 l = normalize(vec3(-0.45, 0.75, 0.6));
 
+    // the product swatches are very dark; lift them so the cloth reads clearly
+    vec3 base = uColor * 1.9 + 0.025;
+
     float diffuse = max(dot(n, l), 0.0);
-    float spec = pow(max(dot(reflect(-l, n), v), 0.0), 9.0);
-    float fres = pow(1.0 - max(dot(n, v), 0.0), 2.4);
+    vec3 r = reflect(-l, n);
+    float spec = pow(max(dot(r, v), 0.0), 14.0);       // crisp satin highlight
+    float glow = pow(max(dot(r, v), 0.0), 3.5);        // broad soft sheen around it
+    float fres = pow(1.0 - max(dot(n, v), 0.0), 2.2);
 
-    vec3 col = uColor * (0.22 + 1.0 * diffuse);
-    col += uSheen * spec * 0.45;
-    col += mix(uColor, uSheen, 0.5) * fres * 0.35;
-    col *= 0.85 + 0.25 * smoothstep(-0.6, 0.8, vH); // folds sit in shadow
+    vec3 col = base * (0.3 + 1.1 * diffuse);
+    col += uSheen * (spec * 0.75 + glow * 0.12);
+    col += mix(base, uSheen, 0.45) * fres * 0.4;
+    col *= 0.62 + 0.5 * smoothstep(-0.7, 0.9, vH);    // deeper folds, brighter crests
 
-    // fade into the black page at the edges
+    // fade into the black page at the edges (gentler than before, so more cloth shows)
     vec2 c = vUv - 0.5;
-    float vig = smoothstep(0.62, 0.18, length(c * vec2(1.0, 1.25)));
+    float vig = smoothstep(0.8, 0.22, length(c * vec2(1.0, 1.2)));
     gl_FragColor = vec4(col * vig, 1.0);
   }
 `;
@@ -102,7 +107,8 @@ export default function Silk({ color, className = "" }: { color: string; classNa
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const small = window.innerWidth < 700;
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    // sharp on desktop, lighter on phones (the cloth is soft, so 1.25x is plenty there)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, small ? 1.25 : 1.75));
     renderer.setClearColor(0x000000, 1);
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
@@ -113,7 +119,8 @@ export default function Silk({ color, className = "" }: { color: string; classNa
     const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
     camera.position.set(0, 0, 9);
 
-    const geometry = new THREE.PlaneGeometry(16, 10, small ? 120 : 220, small ? 80 : 140);
+    // the folds are long and smooth, so this many vertices is enough to look perfectly round
+    const geometry = new THREE.PlaneGeometry(16, 10, small ? 90 : 180, small ? 56 : 110);
     const uniforms = {
       uTime: { value: 0 },
       uMouse: { value: new THREE.Vector2(0, 0) },
