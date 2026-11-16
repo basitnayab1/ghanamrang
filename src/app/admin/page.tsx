@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { isAdmin } from "@/lib/admin-auth";
 import { listOrders } from "@/lib/orders";
-import { AdminLogin, AdminOrders } from "@/components/AdminViews";
+import { listLeads, type Lead } from "@/lib/leads";
+import { AdminLeads, AdminLogin, AdminOrders } from "@/components/AdminViews";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Orders", robots: { index: false, follow: false } };
@@ -30,10 +31,20 @@ export default async function AdminPage() {
       </main>
     );
   }
+
+  let leads: Lead[] = [];
+  let leadsError: string | undefined;
+  try {
+    leads = await listLeads();
+  } catch (e) {
+    leadsError = e instanceof Error ? e.message : "Couldn't load leads.";
+  }
+
   return (
     <main className="min-h-screen bg-ink">
       {/* keyed so "Refresh" (router.refresh) replaces the client copy with new data */}
       <AdminOrders key={orders.map((o) => o.number + o.status).join()} orders={orders} />
+      <AdminLeads leads={leads} error={leadsError} />
     </main>
   );
 }

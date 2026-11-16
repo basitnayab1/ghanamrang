@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { formatPrice } from "@/data/catalog";
 import { PAYMENT_METHODS } from "@/lib/checkout";
 import type { Order, OrderStatus } from "@/lib/orders";
+import type { Lead } from "@/lib/leads";
 
 // kept in sync with ORDER_STATUSES in lib/orders (that module is server-only)
 const STATUSES: OrderStatus[] = ["new", "confirmed", "shipped", "delivered", "cancelled"];
@@ -176,5 +177,54 @@ export function AdminOrders({ orders: initial }: { orders: Order[] }) {
         </ul>
       )}
     </div>
+  );
+}
+
+/** People who left their details with the chat assistant, newest first. */
+export function AdminLeads({ leads, error }: { leads: Lead[]; error?: string }) {
+  return (
+    <section className="mx-auto max-w-[1200px] px-6 pb-24 md:px-10">
+      <div className="flex items-end justify-between gap-4 border-t border-line pt-10">
+        <div>
+          <h2 className="font-serif text-[36px] font-light leading-none">Leads</h2>
+          <p className="mt-2 text-[13px] text-muted">From the chat assistant · {leads.length} total</p>
+        </div>
+      </div>
+
+      {error ? (
+        <p role="alert" className="mt-6 rounded-md border border-red-400/40 bg-red-400/10 p-4 text-[13px] text-red-300">{error}</p>
+      ) : leads.length === 0 ? (
+        <p className="py-16 text-center text-muted">No one has left their details yet.</p>
+      ) : (
+        <ul className="mt-6 divide-y divide-line rounded-xl border border-line bg-card">
+          {leads.map((l) => (
+            <li key={l.id} className="flex flex-wrap items-start gap-x-6 gap-y-2 p-4 text-[13px]">
+              <div className="min-w-[180px] flex-1">
+                <p className="text-[14px] font-medium">{l.name}</p>
+                <p className="text-[12px] text-muted">
+                  {[l.city, new Date(l.createdAt).toLocaleString("en-PK", { dateStyle: "medium", timeStyle: "short" })].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              <div className="min-w-[200px] flex-[2] space-y-1 text-paper/80">
+                {l.interest && <p><span className="text-muted">Likes </span>{l.interest}</p>}
+                {l.message && <p><span className="text-muted">Note </span>{l.message}</p>}
+                {l.page && <p className="text-[11px] text-muted">Chatted on {l.page}</p>}
+              </div>
+              <div className="flex items-center gap-2">
+                <a href={`tel:${l.phone}`} className="tabular-nums underline-offset-2 hover:underline">{l.phone}</a>
+                <a
+                  href={`https://wa.me/92${l.phone.slice(1)}?text=${encodeURIComponent(`Assalam o Alaikum ${l.name.split(" ")[0]}! This is Ghanam Rang — thank you for reaching out.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-md bg-[#25D366] px-3 py-1.5 text-[12px] font-medium text-black"
+                >
+                  WhatsApp
+                </a>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
