@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   AnimatePresence,
   motion,
+  useMotionValue,
   useReducedMotion,
   useScroll,
   useSpring,
@@ -33,10 +34,25 @@ const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayout
  * the rack sideways, the pieces swing with the speed of the scroll, and clicking
  * one pulls it off the rail into a quick view.
  */
+/**
+ * The rail is a gentle arc, as if the rack curves away from you: highest in
+ * the middle of the screen and dipping toward the edges. Returns how far
+ * below the top of the rail a point at screen x sits, in px.
+ */
+function railDrop(x: number, width: number) {
+  const depth = width < 700 ? 22 : 44;
+  const d = (x - width / 2) / (width / 2);
+  return depth * Math.min(d * d, 2.2);
+}
+
 export default function TheRail() {
   const sectionRef = useRef<HTMLElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [distance, setDistance] = useState(0);
+  const [width, setWidth] = useState(1200);
+  // when every piece fits on screen, centre the rack so the curve is symmetric
+  const [lead, setLead] = useState(0);
   const [picked, setPicked] = useState<Piece | null>(null);
   const reduce = useReducedMotion();
 
@@ -44,7 +60,20 @@ export default function TheRail() {
   useIsoLayoutEffect(() => {
     const measure = () => {
       const track = trackRef.current;
-      if (track) setDistance(Math.max(0, track.scrollWidth - window.innerWidth));
+      const w = stageRef.current?.clientWidth ?? window.innerWidth;
+      if (!track) return;
+      setWidth(w);
+      const first = track.firstElementChild as HTMLElement | null;
+      const last = track.lastElementChild as HTMLElement | null;
+      const content = first && last ? last.offsetLeft + last.offsetWidth - first.offsetLeft : track.scrollWidth;
+      if (first && content < w * 0.92) {
+        // everything fits: no sliding, just centre the pieces under the top of the arc
+        setDistance(0);
+        setLead((w - content) / 2 - first.offsetLeft);
+      } else {
+        setDistance(Math.max(0, track.scrollWidth - w));
+        setLead(0);
+      }
     };
     measure();
     window.addEventListener("resize", measure);
@@ -79,13 +108,28 @@ export default function TheRail() {
           <p className="hidden max-w-[220px] text-right text-[12px] text-muted md:block">Scroll to slide the rail. Tap any piece to take it off the hanger.</p>
         </div>
 
-        <div className="relative mt-6 flex-1">
-          {/* the rail itself */}
-          <div className="absolute inset-x-0 top-[22px] h-[3px] bg-gradient-to-b from-[#d9d4cb] via-[#8d8880] to-[#3b3936] shadow-[0_6px_14px_rgba(0,0,0,0.8)]" />
+        <div ref={stageRef} className="relative mt-6 flex-1">
+          {/* the rail itself: a curved metal rod */}
+          <CurvedRail width={width} />
 
-          <motion.div ref={trackRef} style={{ x: smoothX }} className="absolute left-0 top-0 flex h-full gap-6 pl-6 pr-[12vw] md:gap-10 md:pl-10">
+          <motion.div
+            ref={trackRef}
+            style={{ x: smoothX, left: lead }}
+            className="absolute top-0 flex h-full gap-6 pl-6 pr-[12vw] md:gap-10 md:pl-10"
+          >
             {pieces.map((piece, i) => (
-              <Hanging key={piece.id} piece={piece} index={i} swing={swing} hidden={picked?.id === piece.id} onPick={() => setPicked(piece)} />
+              <Hanging
+                key={piece.id}
+                piece={piece}
+                index={i}
+                swing={swing}
+                trackX={smoothX}
+                lead={lead}
+                width={width}
+                curve={!reduce}
+                hidden={picked?.id === piece.id}
+                onPick={() => setPicked(piece)}
+              />
             ))}
           </motion.div>
         </div>
@@ -96,23 +140,90 @@ export default function TheRail() {
   );
 }
 
+/** The rod, drawn along the same arc the hangers follow. */
+function CurvedRail({ width }: { width: number }) {
+  const steps = 48;
+  const pts = Array.from({ length: steps + 1 }, (_, i) => {
+    const x = (i / steps) * width;
+    return `${x.toFixed(1)},${(4 + railDrop(x, width)).toFixed(1)}`;
+  });
+  const h = railDrop(0, width) + 24;
+  return (
+    <svg aria-hidden width={width} height={h} viewBox={`0 0 ${width} ${h}`} className="pointer-events-none absolute left-0 top-[18px] overflow-visible">
+      <defs>
+        <linearGradient id="rail-metal" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#efe9df" />
+          <stop offset="0.5" stopColor="#9a948b" />
+          <stop offset="1" stopColor="#3b3936" />
+        </linearGradient>
+      </defs>
+      {/* soft shadow under the rod */}
+      <polyline points={pts.join(" ")} fill="none" stroke="rgba(0,0,0,0.75)" strokeWidth="9" transform="translate(0 7)" style={{ filter: "blur(5px)" }} />
+      <polyline points={pts.join(" ")} fill="none" stroke="url(#rail-metal)" strokeWidth="3.5" strokeLinecap="round" />
+      {/* a thin highlight along the top of the metal */}
+      <polyline points={pts.join(" ")} fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1" transform="translate(0 -1)" />
+    </svg>
+  );
+}
+
 function Hanging({
   piece,
   index,
   swing,
+  trackX,
+  lead,
+  width,
+  curve,
   hidden,
   onPick,
 }: {
   piece: Piece;
   index: number;
   swing: MotionValue<number>;
+  trackX: MotionValue<number>;
+  lead: number;
+  width: number;
+  curve: boolean;
   hidden: boolean;
   onPick: () => void;
 }) {
   // alternate pieces swing slightly differently, so the rack doesn't move as one block
   const rotate = useTransform(swing, (s) => s * (index % 2 ? 0.8 : 1.1));
 
+  // Where this hanger's hook sits on screen, so it can follow the arc of the rail.
+  // Everything that feeds the position is a motion value, so it updates both
+  // when the rail slides and when the layout is (re)measured.
+  const ref = useRef<HTMLDivElement>(null);
+  const centerMV = useMotionValue(0);
+  const leadMV = useMotionValue(lead);
+  const widthMV = useMotionValue(width);
+  useEffect(() => leadMV.set(lead), [lead, leadMV]);
+  useEffect(() => widthMV.set(width), [width, widthMV]);
+  useIsoLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const read = () => centerMV.set(el.offsetLeft + el.offsetWidth / 2);
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [centerMV]);
+
+  const inputs = [trackX, leadMV, centerMV, widthMV];
+  const screenX = ([tx, l, c]: number[]) => l + tx + c;
+  // -1 at the left edge of the screen, 0 in the middle, 1 at the right edge
+  const offset = (v: number[]) => (screenX(v) - v[3] / 2) / (v[3] / 2);
+  // down onto the arc, turned to face the middle, and a little smaller toward the edges
+  const y = useTransform(inputs, (v: number[]) => (curve ? railDrop(screenX(v), v[3]) : 0));
+  const rotateY = useTransform(inputs, (v: number[]) => (curve ? Math.max(-32, Math.min(32, offset(v) * -20)) : 0));
+  const scale = useTransform(inputs, (v: number[]) => (curve ? 1 - 0.1 * Math.min(offset(v) ** 2, 2) : 1));
+
   return (
+    <motion.div
+      ref={ref}
+      style={{ y, rotateY, scale, transformPerspective: 1200, transformOrigin: "50% 22px" }}
+      className="h-full shrink-0"
+    >
     <motion.button
       onClick={onPick}
       aria-label={`${piece.product.name} in ${piece.color.name}`}
@@ -136,6 +247,7 @@ function Hanging({
       <p className="mt-3 text-[12px] text-paper/80">{piece.product.name}</p>
       <p className="text-[11px] text-muted">{piece.color.name}</p>
     </motion.button>
+    </motion.div>
   );
 }
 
