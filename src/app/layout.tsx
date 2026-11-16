@@ -11,6 +11,7 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import BagDrawer, { BagHydrator } from "@/components/BagDrawer";
 import ScrollProgress from "@/components/ScrollProgress";
+import ChatAssistant from "@/components/ChatAssistant";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,6 +40,9 @@ export default function RootLayout({
         <SiteFooter />
         <BagDrawer />
         <BagHydrator />
+        <Suspense fallback={null}>
+          <ChatAssistant />
+        </Suspense>
       </body>
     </html>
   );

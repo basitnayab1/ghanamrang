@@ -3,7 +3,8 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { Redis } from "@upstash/redis";
+import type { Redis } from "@upstash/redis";
+import { STORAGE_MISSING, fileStorageAllowed, getRedis } from "./redis";
 import { deliveryFor, priceLines, type CustomerInput, type OrderInput, type PaymentMethod, type PricedLine } from "./checkout";
 
 /**
@@ -137,13 +138,12 @@ function fileStore(): Store {
 let store: Store | undefined;
 function getStore(): Store {
   if (store) return store;
-  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (url && token) {
-    store = redisStore(new Redis({ url, token }));
-  } else if (process.env.VERCEL) {
+  const redis = getRedis();
+  if (redis) {
+    store = redisStore(redis);
+  } else if (!fileStorageAllowed()) {
     // Vercel's file system is read-only and temporary — saving to a file would lose orders.
-    throw new Error("Order storage is not set up: connect Upstash for Redis in Vercel → Storage, then redeploy.");
+    throw new Error(STORAGE_MISSING);
   } else {
     store = fileStore();
   }

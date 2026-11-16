@@ -7,7 +7,7 @@ import { findColor, getProduct } from "@/data/catalog";
 
 export const DELIVERY_FEE = 250; // placeholder
 export const FREE_DELIVERY_OVER = 10000; // placeholder
-export const WHATSAPP_NUMBER = "923229120086";
+export { WHATSAPP_NUMBER } from "./social";
 
 export const CITIES = [
   "Karachi", "Lahore", "Islamabad", "Rawalpindi", "Faisalabad", "Multan", "Peshawar", "Quetta",
