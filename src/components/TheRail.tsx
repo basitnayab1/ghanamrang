@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   AnimatePresence,
   motion,
+  useMotionTemplate,
   useMotionValue,
   useReducedMotion,
   useScroll,
@@ -140,6 +141,51 @@ export default function TheRail() {
   );
 }
 
+/** Top edge of the rod at the middle of the arc, in px from the top of the rail area. */
+const ROD_TOP = 20;
+
+/**
+ * Finds the inside top of the hanger's hook in a transparent photo, in the
+ * photo's own pixels: the first see-through pixel under the topmost bit of
+ * wire. Cached per photo. Returns null if it can't be read.
+ */
+const hookCache = new Map<string, number | null>();
+function hookAnchor(img: HTMLImageElement): number | null {
+  const key = img.currentSrc || img.src;
+  if (hookCache.has(key)) return hookCache.get(key)!;
+  let result: number | null = null;
+  try {
+    const w = img.naturalWidth;
+    const h = Math.min(img.naturalHeight, Math.ceil(img.naturalHeight * 0.2)); // the hook is near the top
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext("2d", { willReadFrequently: true })!;
+    ctx.drawImage(img, 0, 0, w, h, 0, 0, w, h);
+    const a = ctx.getImageData(0, 0, w, h).data;
+    const alpha = (x: number, y: number) => a[(y * w + x) * 4 + 3];
+    for (let y = 0; y < h && result === null; y++) {
+      let sum = 0;
+      let n = 0;
+      for (let x = 0; x < w; x++) {
+        if (alpha(x, y) > 128) {
+          sum += x;
+          n++;
+        }
+      }
+      if (!n) continue;
+      const cx = Math.round(sum / n); // the top of the hook
+      let yy = y;
+      while (yy < h && alpha(cx, yy) > 128) yy++; // down through the wire
+      result = yy; // first see-through pixel inside the hook
+    }
+  } catch {
+    result = null;
+  }
+  hookCache.set(key, result);
+  return result;
+}
+
 /** The rod, drawn along the same arc the hangers follow. */
 function CurvedRail({ width }: { width: number }) {
   const steps = 48;
@@ -209,25 +255,53 @@ function Hanging({
     return () => ro.disconnect();
   }, [centerMV]);
 
-  const inputs = [trackX, leadMV, centerMV, widthMV];
+  // How far down the photo the inside of the hook is, in CSS px. Measured from
+  // the photo itself once it loads (each photo's hook sits at a different
+  // height), and re-measured when the photo is resized.
+  const imgRef = useRef<HTMLImageElement>(null);
+  const hookMV = useMotionValue(ROD_TOP);
+  useIsoLayoutEffect(() => {
+    const img = imgRef.current;
+    if (!img) return;
+    const place = () => {
+      if (!img.naturalWidth) return;
+      const anchor = hookAnchor(img);
+      // object-contain + object-top: the photo is scaled to fit and pinned to the top
+      const s = Math.min(img.clientWidth / img.naturalWidth, img.clientHeight / img.naturalHeight);
+      if (anchor !== null && s > 0) hookMV.set(anchor * s);
+    };
+    if (img.complete) place();
+    img.addEventListener("load", place);
+    const ro = new ResizeObserver(place);
+    ro.observe(img);
+    return () => {
+      img.removeEventListener("load", place);
+      ro.disconnect();
+    };
+  }, [hookMV]);
+  // pivot for the swing, the turn and the shrink: the hook, so it never leaves the rod
+  const pivot = useMotionTemplate`50% ${hookMV}px`;
+
+  const inputs = [trackX, leadMV, centerMV, widthMV, hookMV];
   const screenX = ([tx, l, c]: number[]) => l + tx + c;
   // -1 at the left edge of the screen, 0 in the middle, 1 at the right edge
   const offset = (v: number[]) => (screenX(v) - v[3] / 2) / (v[3] / 2);
-  // down onto the arc, turned to face the middle, and a little smaller toward the edges
-  const y = useTransform(inputs, (v: number[]) => (curve ? railDrop(screenX(v), v[3]) : 0));
+  // lift/drop the piece so the inside of its hook rests on the top of the rod,
+  // following the arc; turned to face the middle and a little smaller toward the edges
+  const y = useTransform(inputs, (v: number[]) => ROD_TOP - v[4] + (curve ? railDrop(screenX(v), v[3]) : 0));
   const rotateY = useTransform(inputs, (v: number[]) => (curve ? Math.max(-32, Math.min(32, offset(v) * -20)) : 0));
   const scale = useTransform(inputs, (v: number[]) => (curve ? 1 - 0.1 * Math.min(offset(v) ** 2, 2) : 1));
 
   return (
     <motion.div
       ref={ref}
-      style={{ y, rotateY, scale, transformPerspective: 1200, transformOrigin: "50% 22px" }}
+      style={{ y, rotateY, scale, transformPerspective: 1200, transformOrigin: pivot }}
       className="h-full shrink-0"
     >
     <motion.button
       onClick={onPick}
       aria-label={`${piece.product.name} in ${piece.color.name}`}
-      style={{ rotate, transformOrigin: "50% 22px" }}
+      style={{ rotate, transformOrigin: pivot }}
       whileHover={{ y: -10 }}
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
       className="group relative flex h-full w-[min(64vw,290px)] shrink-0 md:w-[clamp(200px,22vw,280px)] cursor-pointer flex-col items-center outline-none"
@@ -238,7 +312,7 @@ function Hanging({
         className="relative w-full transition group-focus-visible:rounded-lg group-focus-visible:ring-2 group-focus-visible:ring-accent"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={piece.src} alt="" loading="lazy" decoding="async" draggable={false} className="h-[min(68svh,620px)] w-full object-contain object-top drop-shadow-[0_24px_20px_rgba(0,0,0,0.45)]" />
+        <img ref={imgRef} src={piece.src} alt="" loading="lazy" decoding="async" draggable={false} className="h-[min(68svh,620px)] w-full object-contain object-top drop-shadow-[0_24px_20px_rgba(0,0,0,0.45)]" />
       </motion.div>
       {/* swing tag */}
       <span className="pointer-events-none absolute left-[62%] top-[96px] origin-top -rotate-6 rounded-sm bg-paper px-2 py-1 text-[10px] font-medium tabular-nums text-ink opacity-0 shadow transition duration-300 group-hover:rotate-3 group-hover:opacity-100">
