@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { categories, colorways, type Category } from "@/data/catalog";
+import { categories, colorways, productFamilies, type Category } from "@/data/catalog";
 import ProductCard from "./ProductCard";
 
 const SORTS = [
@@ -31,15 +31,17 @@ export default function ShopView() {
   };
 
   const list = useMemo(() => {
-    const out = colorways.filter(
-      ({ product, color }) => (!category || product.category === category) && (!colorFilter || color.name === colorFilter),
-    );
-    if (sort === "price-asc") out.sort((a, b) => a.product.price - b.product.price);
-    if (sort === "price-desc") out.sort((a, b) => b.product.price - a.product.price);
+    const out = productFamilies.flatMap((family) => {
+      if (category && family.product.category !== category) return [];
+      if (!colorFilter) return [{ product: family.product, color: family.color }];
+      return family.styles.filter(({ color }) => color.name === colorFilter);
+    });
+    if (sort === "price-asc") out.sort((a, b) => (a.product.price ?? Infinity) - (b.product.price ?? Infinity));
+    if (sort === "price-desc") out.sort((a, b) => (b.product.price ?? -Infinity) - (a.product.price ?? -Infinity));
     return out;
   }, [category, colorFilter, sort]);
 
-  const title = categories.find((c) => c.id === category)?.label ?? "All sets";
+  const title = categories.find((c) => c.id === category)?.label ?? "All products";
   const chip = (active: boolean) =>
     `shrink-0 rounded-full border px-4 py-1.5 text-[12px] transition ${active ? "border-paper bg-paper text-ink" : "border-line text-paper/80 hover:border-paper/50"}`;
 
@@ -56,7 +58,7 @@ export default function ShopView() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {COLORS.map(([name, swatch]) => (
             <button
               key={name}
@@ -98,7 +100,7 @@ export default function ShopView() {
       ) : (
         <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3">
           {list.map(({ product, color }, i) => (
-            <ProductCard key={`${product.id}-${color.name}`} product={product} color={color} index={i} />
+            <ProductCard key={`${product.id}-${color.name}`} product={product} color={color} index={i} filtered={!!colorFilter} />
           ))}
         </div>
       )}

@@ -14,13 +14,13 @@ import {
   useVelocity,
   type MotionValue,
 } from "framer-motion";
-import { colorways, formatPrice, productHref, type ColorOption, type Product } from "@/data/catalog";
+import { familyName, familyStyles, formatPrice, productFamilies, productHref, type ColorOption, type Product } from "@/data/catalog";
 import { useBag } from "@/store/bag";
 
 /** One garment on a hanger per colorway. */
 type Piece = { id: string; src: string; product: Product; color: ColorOption };
 
-const pieces: Piece[] = colorways.map(({ product, color }) => ({
+const pieces: Piece[] = productFamilies.map(({ product, color }) => ({
   id: `${product.id}-${color.name}`,
   src: color.railImage,
   product,
@@ -318,7 +318,7 @@ function Hanging({
       <span className="pointer-events-none absolute left-[62%] top-[96px] origin-top -rotate-6 rounded-sm bg-paper px-2 py-1 text-[10px] font-medium tabular-nums text-ink opacity-0 shadow transition duration-300 group-hover:rotate-3 group-hover:opacity-100">
         {formatPrice(piece.product.price)}
       </span>
-      <p className="mt-3 text-[12px] text-paper/80">{piece.product.name}</p>
+      <p className="mt-3 text-[12px] text-paper/80">{familyName(piece.product)}</p>
       <p className="text-[11px] text-muted">{piece.color.name}</p>
     </motion.button>
     </motion.div>
@@ -329,7 +329,9 @@ function QuickView({ piece, onClose }: { piece: Piece; onClose: () => void }) {
   const add = useBag((s) => s.add);
   const [size, setSize] = useState<string | null>(null);
   const [needSize, setNeedSize] = useState(false);
-  const { product, color } = piece;
+  const styles = familyStyles(piece.product);
+  const [selected, setSelected] = useState({ product: piece.product, color: piece.color });
+  const { product, color } = selected;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -350,7 +352,7 @@ function QuickView({ piece, onClose }: { piece: Piece; onClose: () => void }) {
         {/* the photo flies here from the rail */}
         <motion.div layoutId={`rail-${piece.id}`} className="relative max-h-[80svh] overflow-hidden rounded-xl bg-card" transition={{ type: "spring", stiffness: 220, damping: 28 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={piece.src} alt={`${product.name} in ${color.name} hanging on a hanger`} className="aspect-[3/4.4] h-full w-full object-contain" />
+          <img src={color.railImage} alt={`${product.name} in ${color.name} hanging on a hanger`} className="aspect-[3/4.4] h-full w-full object-contain" />
         </motion.div>
 
         <motion.div
@@ -362,8 +364,19 @@ function QuickView({ piece, onClose }: { piece: Piece; onClose: () => void }) {
           <p className="text-[11px] uppercase tracking-[0.18em] text-accent">{color.name}</p>
           <h3 className="mt-1 font-serif text-[30px] font-light leading-tight md:text-[42px]">{product.name}</h3>
           <p className="mt-1 text-[15px] tabular-nums">{formatPrice(product.price)}</p>
+          {styles.length > 1 && (
+            <select aria-label="Colour" value={productHref(product, color)}
+              onChange={(event) => {
+                const style = styles.find((s) => productHref(s.product, s.color) === event.target.value);
+                if (style) { setSelected(style); setSize(null); setNeedSize(false); }
+              }}
+              className="mt-3 rounded border border-line bg-card p-2 text-sm">
+              {styles.map((s) => <option key={s.color.name} value={productHref(s.product, s.color)}>{s.color.name}</option>)}
+            </select>
+          )}
           <p className="mt-4 hidden text-[13px] leading-relaxed text-paper/70 sm:block">{product.description}</p>
 
+          {product.price !== null && product.sizes.length > 0 && (<>
           <p className={`mt-6 mb-2 text-[11px] uppercase tracking-[0.16em] ${needSize && !size ? "text-red-400" : "text-muted"}`}>
             {needSize && !size ? "Please choose a size" : "Size"}
           </p>
@@ -386,8 +399,9 @@ function QuickView({ piece, onClose }: { piece: Piece; onClose: () => void }) {
           <button onClick={addToBag} className="mt-6 w-full rounded-md bg-paper py-3.5 text-[13px] font-medium text-ink transition hover:bg-accent">
             Add to bag
           </button>
+          </>)}
           <Link href={productHref(product, color)} className="mt-3 text-center text-[12px] text-muted underline-offset-4 hover:text-paper hover:underline">
-            Full details &amp; size chart
+            Product details
           </Link>
           <button onClick={onClose} className="mt-4 text-[12px] text-muted hover:text-paper">
             Hang it back ✕

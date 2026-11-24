@@ -40,15 +40,15 @@ const social: ChatLink[] = [
 ];
 
 function sizesText() {
-  const lines = products.map((p) => {
+  const lines = products.filter(p => p.sizeChart.rows.length).map((p) => {
     const lengths = p.sizeChart.rows.map((r) => r[1]).join(" / ");
-    return `• ${p.name}: length ${lengths} ${p.sizeChart.unit} (S / M / L)`;
+    return `• ${p.name}: ${p.sizeChart.head[1].toLowerCase()} ${lengths}${p.sizeChart.unit ? " " + p.sizeChart.unit : ""} (S / M / L)`;
   });
-  return `Every set comes in Small, Medium and Large with a relaxed fit.\n${lines.join("\n")}\nNot sure which size? Leave your details and we'll help you choose.`;
+  return `Available size charts:\n${lines.join("\n")}\nNot sure which size? Leave your details and we'll help you choose.`;
 }
 
 const deliveryText = () =>
-  `We deliver across Pakistan. Delivery is ${formatPrice(DELIVERY_FEE)}, and free on orders over ${formatPrice(FREE_DELIVERY_OVER)}.\nPay cash on delivery, or by bank / JazzCash / Easypaisa transfer.`;
+  `We deliver across Pakistan. Delivery is ${formatPrice(DELIVERY_FEE)}, and free on orders over ${formatPrice(FREE_DELIVERY_OVER)}.\nKiftar and Nezha sets require advance payment. Checkout shows the payment methods available for your bag.`;
 
 /** Rough intent from free text typed at the menu. */
 function route(text: string): string | null {
@@ -65,6 +65,17 @@ export default function ChatAssistant() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [nudge, setNudge] = useState(false);
+  const [heroVisible, setHeroVisible] = useState(false);
+  useEffect(() => {
+    const hero = document.getElementById("collection-hero");
+    if (!hero) {
+      setHeroVisible(false);
+      return;
+    }
+    const observer = new IntersectionObserver(([entry]) => setHeroVisible(entry.isIntersecting));
+    observer.observe(hero);
+    return () => observer.disconnect();
+  }, [pathname]);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [step, setStep] = useState<Step>("menu");
   const [typing, setTyping] = useState(false);
@@ -134,7 +145,7 @@ export default function ChatAssistant() {
         );
         break;
       case "Sizes & fit":
-        await bot(sizesText(), products.map((p) => ({ label: `${p.name} size chart`, href: `/product/${p.id}`, kind: "page" as const })));
+        await bot(sizesText(), products.filter(p => p.sizeChart.rows.length).map((p) => ({ label: `${p.name} size chart`, href: `/product/${p.id}`, kind: "page" as const })));
         break;
       case "Delivery & payment":
         await bot(deliveryText());
@@ -230,9 +241,9 @@ export default function ChatAssistant() {
   return (
     <>
       {/* floating buttons */}
-      <div className="fixed bottom-4 right-4 z-[180] flex flex-col items-end gap-3 md:bottom-6 md:right-6">
+      <div className="pointer-events-none fixed bottom-4 right-4 z-[180] flex flex-col items-end gap-3 md:bottom-6 md:right-6 [&>*]:pointer-events-auto">
         <AnimatePresence>
-          {nudge && !open && (
+          {nudge && !open && !heroVisible && (
             <motion.button
               initial={{ opacity: 0, y: 8, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}

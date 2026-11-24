@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { colorways, getProduct, products } from "@/data/catalog";
+import { familyName, productFamilies, getProduct, products } from "@/data/catalog";
 import ProductDetail from "@/components/ProductDetail";
 import ProductCard from "@/components/ProductCard";
 
@@ -20,7 +20,7 @@ export default async function ProductPage({ params }: Props) {
   const product = getProduct((await params).id);
   if (!product) notFound();
 
-  const more = colorways.filter((c) => c.product.id !== product.id).slice(0, 4);
+  const more = productFamilies.filter((family) => family.label !== familyName(product)).slice(0, 4);
 
   return (
     <main className="bg-ink">

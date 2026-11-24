@@ -7,13 +7,13 @@ import ScrollStatement from "@/components/ScrollStatement";
 import ScrollMarquee from "@/components/ScrollMarquee";
 import ShadesSection from "@/components/ShadesSection";
 import { preload } from "react-dom";
-import { colorways, heroFigures, products } from "@/data/catalog";
+import { colorways, heroFigures, productFamilies, products } from "@/data/catalog";
 
 export default function Home() {
-  const abaya = products.find((p) => p.category === "abaya-sets")!;
+  const abaya = products.find((p) => p.id === "open-abaya-set")!;
 
   // the hero figures are the first thing people see: ask for them in the <head>, before any script
-  heroFigures.forEach((f) => preload(f.src, { as: "image", fetchPriority: "high" }));
+  preload(heroFigures[0].src, { as: "image", fetchPriority: "high" });
 
   return (
     <main className="bg-ink">
@@ -30,12 +30,12 @@ export default function Home() {
         <Reveal3D className="mb-8 flex items-end justify-between">
           <div>
             <p className="text-[11px] uppercase tracking-[0.22em] text-accent">The collection</p>
-            <h2 className="mt-2 font-serif text-[36px] font-light md:text-[44px]">Every set, every shade</h2>
+            <h2 className="mt-2 font-serif text-[36px] font-light md:text-[44px]">Shop the collection</h2>
           </div>
           <Link href="/shop" className="text-[13px] text-muted hover:text-paper">Shop all →</Link>
         </Reveal3D>
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3">
-          {colorways.map(({ product, color }, i) => (
+          {productFamilies.map(({ product, color }, i) => (
             <ProductCard key={`${product.id}-${color.name}`} product={product} color={color} index={i} />
           ))}
         </div>
@@ -43,7 +43,7 @@ export default function Home() {
 
       {/* three lengths of cloth in 3D, one per colour, moving in a breeze */}
       <ShadesSection
-        shades={colorways.map(({ product, color }) => ({
+        shades={colorways.filter(({ color }) => ["Mocha", "Navy", "Olive"].includes(color.name)).map(({ product, color }) => ({
           name: color.name,
           hex: color.swatch,
           note: product.name,
@@ -63,7 +63,7 @@ export default function Home() {
           <p className="text-[11px] uppercase tracking-[0.22em] text-accent">Find your fit</p>
           <h2 className="mt-2 font-serif text-[36px] font-light md:text-[44px]">Three sizes, cut loose.</h2>
           <p className="mt-4 max-w-sm text-[14px] leading-relaxed text-paper/70">
-            Every set comes in Small, Medium and Large, with a relaxed fit. Not sure? Message us on WhatsApp and we&apos;ll help you choose.
+            The Open Abaya Set comes in Small, Medium and Large. For sizing on another set, message us on WhatsApp.
           </p>
           <Link href={`/product/${abaya.id}`} className="mt-6 inline-block text-[13px] underline underline-offset-4 hover:text-accent">
             See the size chart
