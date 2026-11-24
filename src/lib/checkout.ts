@@ -1,7 +1,7 @@
 /**
  * Checkout settings and validation shared by the checkout page (client) and
  * the order API (server). PLACEHOLDERS: delivery fee, free-delivery threshold
- * and transfer accounts — replace with the real values.
+ * — replace with the real values.
  */
 import { findColor, getProduct } from "@/data/catalog";
 
@@ -16,16 +16,10 @@ export const CITIES = [
 
 export const PAYMENT_METHODS = [
   { id: "cod", label: "Cash on delivery", note: "Pay in cash when your order arrives." },
-  { id: "transfer", label: "Bank transfer / JazzCash / Easypaisa", note: "Account details are shown after you place the order." },
+  { id: "transfer", label: "Bank transfer / JazzCash / Easypaisa", note: "Confirm the payment details with us on WhatsApp after placing your order." },
 ] as const;
 
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number]["id"];
-
-/** Shown on the confirmation page for transfer orders. PLACEHOLDER details. */
-export const TRANSFER_ACCOUNTS = [
-  { label: "Bank (Meezan Bank)", title: "Ghanam Rang", number: "0000 0000000000 — replace me" },
-  { label: "JazzCash / Easypaisa", title: "Ghanam Rang", number: "0300 0000000 — replace me" },
-];
 
 export type OrderLineInput = { productId: string; size: string; colorName: string; qty: number };
 
@@ -55,7 +49,7 @@ export function normalisePhone(raw: string): string | null {
 export function priceLines(lines: OrderLineInput[]): PricedLine[] {
   return lines.map((l) => {
     const product = getProduct(l.productId);
-    if (!product) throw new Error("Unknown product");
+    if (!product || product.price === null) throw new Error("Unknown product");
     const color = product.colors.find((c) => c.name === l.colorName);
     if (!color) throw new Error("Unknown colour");
     if (!product.sizes.includes(l.size)) throw new Error("Unknown size");
@@ -108,6 +102,9 @@ export function validateOrder(input: unknown): { errors: FieldErrors } | { clean
   else {
     try {
       priceLines(lines as OrderLineInput[]);
+      if (payment === "cod" && lines.some((line) => getProduct(line.productId)?.advanceOnly)) {
+        errors.payment = "Your bag includes an item that requires advance payment.";
+      }
     } catch {
       errors.lines = "Something in your bag is no longer available. Please review your bag.";
     }

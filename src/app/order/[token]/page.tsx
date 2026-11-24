@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatPrice } from "@/data/catalog";
-import { PAYMENT_METHODS, TRANSFER_ACCOUNTS, WHATSAPP_NUMBER } from "@/lib/checkout";
+import { PAYMENT_METHODS, WHATSAPP_NUMBER } from "@/lib/checkout";
 import { getOrderByToken, type Order } from "@/lib/orders";
 
 export const dynamic = "force-dynamic";
@@ -54,17 +54,8 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
           <section className="mt-8 rounded-xl border border-accent/40 bg-accent/5 p-5">
             <h2 className="text-[13px] font-medium">Pay by transfer</h2>
             <p className="mt-1 text-[13px] text-paper/70">
-              Send {formatPrice(order.total)} to one of these accounts and share the receipt on WhatsApp with your order number.
+              <a href={wa} target="_blank" rel="noopener noreferrer" className="underline">Message us on WhatsApp</a> with your order number to confirm the transfer details for {formatPrice(order.total)}.
             </p>
-            <ul className="mt-4 space-y-3 text-[13px]">
-              {TRANSFER_ACCOUNTS.map((a) => (
-                <li key={a.label} className="rounded-md bg-card p-3">
-                  <p className="text-muted">{a.label}</p>
-                  <p>{a.title}</p>
-                  <p className="tabular-nums">{a.number}</p>
-                </li>
-              ))}
-            </ul>
           </section>
         )}
 

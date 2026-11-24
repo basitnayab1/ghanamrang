@@ -31,7 +31,9 @@ export default function CheckoutView() {
   const delivery = deliveryFor(subtotal);
 
   const [form, setForm] = useState({ name: "", phone: "", email: "", city: "", address: "", notes: "" });
-  const [payment, setPayment] = useState<PaymentMethod>("cod");
+  const [preferredPayment, setPayment] = useState<PaymentMethod>("cod");
+  const advanceOnly = lines.some(({ product }) => product.advanceOnly);
+  const payment = advanceOnly ? "transfer" : preferredPayment;
   const [errors, setErrors] = useState<FieldErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -144,7 +146,8 @@ export default function CheckoutView() {
         <fieldset>
           <legend className="mb-4 text-[11px] uppercase tracking-[0.18em] text-accent">Payment</legend>
           <div className="space-y-2">
-            {PAYMENT_METHODS.map((m) => (
+            {advanceOnly && <p className="text-[13px] text-accent">Your bag includes an item that requires advance payment.</p>}
+            {PAYMENT_METHODS.filter((m) => !advanceOnly || m.id === "transfer").map((m) => (
               <label
                 key={m.id}
                 className={`flex cursor-pointer items-start gap-3 rounded-md border p-4 transition ${payment === m.id ? "border-paper/70 bg-card-2" : "border-line hover:border-paper/40"}`}

@@ -7,7 +7,7 @@ import { findColor, getProduct, type ColorOption, type Product } from "@/data/ca
 /** What we keep in storage: ids only, so prices and names always come from the catalog. */
 type StoredLine = { productId: string; size: string; colorName: string; qty: number };
 
-export type BagLine = StoredLine & { key: string; product: Product; color: ColorOption };
+export type BagLine = StoredLine & { key: string; product: Product & { price: number }; color: ColorOption };
 
 export type BagEntry = { productId: string; size: string; colorName: string };
 
@@ -66,8 +66,8 @@ export const useBag = create<BagState>()(
 export const resolveLines = (lines: StoredLine[]): BagLine[] =>
   lines.flatMap((l) => {
     const product = getProduct(l.productId);
-    if (!product) return [];
-    return [{ ...l, key: lineKey(l), product, color: findColor(product, l.colorName) }];
+    if (!product || product.price === null) return [];
+    return [{ ...l, key: lineKey(l), product: { ...product, price: product.price }, color: findColor(product, l.colorName) }];
   });
 
 export const bagCount = (lines: StoredLine[]) => lines.reduce((s, l) => s + l.qty, 0);

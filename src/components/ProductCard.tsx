@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { formatPrice, productHref, type ColorOption, type Product } from "@/data/catalog";
+import { familyName, familyStyles, formatPrice, productHref, type ColorOption, type Product } from "@/data/catalog";
 import Tilt3D from "./Tilt3D";
 
-/** One card per colourway: main photo, second photo on hover. */
-export default function ProductCard({ product, color, index = 0 }: { product: Product; color: ColorOption; index?: number }) {
+export default function ProductCard({ product, color, index = 0, filtered = false }: { product: Product; color: ColorOption; index?: number; filtered?: boolean }) {
   const href = productHref(product, color);
-  const [main, hover] = color.images;
+  const main = color.modelImage;
+  const styles = familyStyles(product);
+  const prices = styles.flatMap(({ product: p }) => p.price === null ? [] : [p.price]);
+  const price = !filtered && new Set(prices).size > 1 ? `From ${formatPrice(Math.min(...prices))}` : formatPrice(product.price);
 
   return (
     <motion.article
@@ -21,13 +23,9 @@ export default function ProductCard({ product, color, index = 0 }: { product: Pr
       className="group"
     >
       <Tilt3D className="rounded-lg">
-      <Link href={href} className="relative block aspect-[3/4] overflow-hidden rounded-lg bg-card">
+      <Link href={href} className={`relative block aspect-[3/4] overflow-hidden rounded-lg ${main.includes("/shop/") ? "bg-[#c9c3b8]" : "bg-card"}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={main} loading="lazy" decoding="async" alt={`${product.name} in ${color.name}`} className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]" />
-        {hover && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={hover} loading="lazy" decoding="async" alt="" className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-700 group-hover:opacity-100" />
-        )}
+        <img src={main} loading="lazy" decoding="async" alt={`${product.name} in ${color.name}`} className="absolute inset-0 h-full w-full object-contain transition duration-700 group-hover:scale-[1.03]" />
         {product.isNew && (
           <span className="absolute left-3 top-3 rounded-full bg-ink/70 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] backdrop-blur">New</span>
         )}
@@ -37,14 +35,14 @@ export default function ProductCard({ product, color, index = 0 }: { product: Pr
       <div className="mt-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link href={href} className="block truncate text-[14px] hover:underline">
-            {product.name}
+            {familyName(product)}
           </Link>
           <p className="mt-0.5 flex items-center gap-1.5 text-[12px] text-muted">
             <span className="h-2.5 w-2.5 rounded-full border border-line" style={{ background: color.swatch }} />
-            {color.name}
+            {filtered || styles.length === 1 ? color.name : `${styles.length} colours`}
           </p>
         </div>
-        <p className="shrink-0 text-[13px] tabular-nums">{formatPrice(product.price)}</p>
+        <p className="shrink-0 text-[13px] tabular-nums">{price}</p>
       </div>
     </motion.article>
   );
