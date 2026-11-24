@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { validateOrder } from "@/lib/checkout";
 import { createOrder } from "@/lib/orders";
+import { sendToOpsDesk } from "@/lib/opsdesk";
 
 export async function POST(req: Request) {
   let body: unknown;
@@ -15,6 +16,8 @@ export async function POST(req: Request) {
 
   try {
     const order = await createOrder(result.clean);
+    // hand it to OpsDesk for confirmation, address and risk checks; never blocks the order on failure
+    await sendToOpsDesk(order);
     return NextResponse.json({ token: order.token, number: order.number }, { status: 201 });
   } catch (e) {
     console.error("Order failed", e);

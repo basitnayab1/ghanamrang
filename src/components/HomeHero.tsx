@@ -17,7 +17,7 @@ import dynamic from "next/dynamic";
 import { findColor, formatPrice, getProduct, heroFigures, productHref, type HeroFigure } from "@/data/catalog";
 
 // WebGL only runs in the browser; three.js loads in its own chunk after the page
-const Silk = dynamic(() => import("./Silk"), { ssr: false });
+const AtelierBackdrop = dynamic(() => import("./AtelierBackdrop"), { ssr: false });
 
 const ease = [0.22, 1, 0.36, 1] as const;
 const CYCLE_MS = 3200;
@@ -66,11 +66,11 @@ export default function HomeHero() {
   const outBlur = useTransform(scrollYProgress, (v) => (v < 0.02 ? "none" : `blur(${(v * 8).toFixed(1)}px)`));
   const [stageW, setStageW] = useState(900);
 
-  // three.js (the silk) waits until the page has painted and the browser is idle,
+  // The 3D backdrop waits until the page has painted and the browser is idle,
   // so it never competes with the photos for bandwidth or the main thread
-  const [silkReady, setSilkReady] = useState(false);
+  const [backdropReady, setBackdropReady] = useState(false);
   useEffect(() => {
-    const start = () => setSilkReady(true);
+    const start = () => setBackdropReady(true);
     if ("requestIdleCallback" in window) {
       const id = window.requestIdleCallback(start, { timeout: 1500 });
       return () => window.cancelIdleCallback(id);
@@ -134,7 +134,7 @@ export default function HomeHero() {
 
   const lead = focused ?? heroFigures[front];
   const leadProduct = getProduct(lead.productId);
-  const silkColor = leadProduct ? findColor(leadProduct, lead.colorName).swatch : "#3a2a24";
+  const backdropColor = leadProduct ? findColor(leadProduct, lead.colorName).swatch : "#3a2a24";
 
   const targetFor = (fig: HeroFigure, i: number) => {
     if (focused) {
@@ -161,8 +161,8 @@ export default function HomeHero() {
   return (
     <section ref={sectionRef} onPointerMove={onPointerMove} className="relative overflow-hidden">
       <h1 className="sr-only">Ghanam Rang — abaya and khimar sets in deep colour</h1>
-      {/* real-3D silk behind everything; it takes the colour of the piece in front */}
-      {silkReady && <Silk color={silkColor} className="pointer-events-none absolute inset-0 animate-[silkIn_1.2s_ease-out_both]" />}
+      {/* The recessed arches take the colour of the piece in front. */}
+      {backdropReady && <AtelierBackdrop color={backdropColor} subdued={!!focused} className="pointer-events-none absolute inset-0 animate-[silkIn_1.2s_ease-out_both]" />}
       {/* warm glow behind the cluster */}
       <div className="pointer-events-none absolute left-1/2 top-[38%] h-[70vh] w-[70vh] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(201,176,138,0.12),transparent_65%)]" />
       {/* darken behind the figures so they stay the focus */}
